@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Balance Projector • jens.org/b/</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<!--
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+-->
+<script src="chart.umd.min.js"></script>
+<style>
+/* ─────────────────────────── theme tokens ─────────────────────────── */
+:root{
+  --bg-0:#0b0b10; --bg-1:#131318; --panel:rgba(255,255,255,.045); --panel-2:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.10); --border-2:rgba(255,255,255,.16);
+  --text:#e4e4ea; --muted:#8a8a96; --faint:#58586a;
+  --accent: #3a3a3a; --accent-2:#4a4a4a;
+  --pos:#2fd6a0; --neg:#ff5f73; --warn:#ffc85c;
+  --chip:rgba(11,17,32,.92); --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.22);
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+html[data-theme="light"]{
+  --bg-0:#eaeaee; --bg-1:#ffffff; --panel:rgba(0,0,0,.03); --panel-2:rgba(0,0,0,.05);
+  --border:rgba(0,0,0,.10); --border-2:rgba(0,0,0,.16);
+  --text:#16161e; --muted:#5c5c6a; --faint:#94949e;
+  --accent:#cccccc; --accent-2:#aaaaaa;
+  --pos:#0fa678; --neg:#e03a52; --warn:#b57b00;
+  --chip:rgba(255,255,255,.95); --grid:rgba(15,15,15,.07); --grid-strong:rgba(15,15,15,.26);
+  --shadow:0 10px 28px rgba(5,5,5,.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--text); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  background:
+    radial-gradient(1100px 600px at 12% -10%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(900px 500px at 105% 0%, color-mix(in oklab, var(--accent-2) 18%, transparent), transparent 55%),
+    linear-gradient(180deg,var(--bg-0),var(--bg-1));
+  background-attachment:fixed;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+/* ─────────────────────────── top bar ─────────────────────────── */
+header{
+  display:flex; align-items:center; gap:14px; padding:12px 18px;
+  border-bottom:1px solid var(--border); backdrop-filter:blur(10px); flex:0 0 auto;
+}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; font-size:15px}
+.brand 
+.dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 4px 14px color-mix(in oklab,var(--accent) 45%,transparent); display:grid;place-items:center;font-size:14px}
+.brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.3px}
+
+.brand .dot img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+} 
+
+.brand .dot {
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--accent), white 38%),
+    color-mix(in oklab, var(--accent-2), white 38%)
+  );
+  flex-shrink: 0;
+}
+
+.spacer{flex:1}
+.status{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);min-width:190px}
+.ring{width:20px;height:20px;flex:0 0 auto;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:3}
+.ring .bg{stroke:var(--border-2)} .ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+button,.btn{
+  font:inherit;font-size:12.5px;font-weight:600;color:var(--text);background:var(--panel);
+  border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer;
+  transition:.15s ease; display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+button:hover{background:var(--panel-2);border-color:var(--border-2);transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;
+  box-shadow:0 6px 18px color-mix(in oklab,var(--accent) 35%,transparent)}
+button.ghost{background:transparent}
+button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+kbd{font:600 10.5px ui-monospace,monospace;background:var(--panel-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--muted)}
+/* ─────────────────────────── layout ─────────────────────────── */
+main{flex:1;display:grid;grid-template-columns:minmax(340px,.9fr) 1.6fr;gap:14px;padding:14px;min-height:0}
+.pane{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;backdrop-filter:blur(6px)}
+.pane>h2{margin:0;padding:11px 14px;font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.pane>h2 .spacer{flex:1}
+/* editor */
+.editor-wrap{flex:1;display:flex;min-height:0;position:relative;font:13px/20px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.gutter{padding:12px 8px 12px 12px;text-align:right;color:var(--faint);background:transparent;user-select:none;overflow:hidden;
+  border-right:1px solid var(--border);min-width:44px;white-space:pre}
+.gutter i{display:block;font-style:normal}
+.gutter i.err{color:var(--neg);font-weight:700} .gutter i.warn{color:var(--warn);font-weight:700}
+.gutter i.ev{color:var(--accent)}
+textarea{flex:1;min-width:0;border:0;outline:0;resize:none;background:transparent;color:var(--text);
+  font:inherit;padding:12px 14px;white-space:pre;overflow:auto;tab-size:4}
+textarea::placeholder{color:var(--faint)}
+/* issues */
+.issues{max-height:30%;overflow:auto;border-top:1px solid var(--border);padding:8px}
+.issue{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:9px;cursor:pointer;font-size:12.3px}
+.issue:hover{background:var(--panel-2)}
+.issue .ln{font:600 11px ui-monospace,monospace;color:var(--muted);background:var(--panel-2);border-radius:5px;padding:1px 6px;flex:0 0 auto}
+.issue.error .ico{color:var(--neg)} .issue.warn .ico{color:var(--warn)} .issue.info .ico{color:var(--accent)}
+
+/* stats */
+/*
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:12px 14px 4px}
+.stat{background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:9px 11px}
+.stat b{display:block;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.stat span{font-size:17px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.stat small{display:block;font-size:11px;color:var(--faint);font-weight:500;margin-top:1px}
+*/
+
+/* tighten these boxes up a little */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;padding:8px 8px 2px}
+.stat{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:7px 7px}
+.stat b{display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.stat span{font-size:20px;font-weight:750;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.stat small{display:block;font-size:10px;color:var(--faint);font-weight:500;margin-top:2px}
+
+
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+/* chart */
+.canvas-wrap{flex:1;position:relative;min-height:220px;padding:6px 10px 10px}
+
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:30px;pointer-events:none}
+.empty[hidden]{display:none}
+.empty div{max-width:340px}
+/* table */
+details.table{border-top:1px solid var(--border)}
+details.table>summary{padding:9px 14px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);list-style:none}
+details.table>summary::-webkit-details-marker{display:none}
+details.table>summary::before{content:"▸ ";display:inline-block;transition:.2s}
+details.table[open]>summary::before{transform:rotate(90deg) translateY(-3px)}
+.tbl-scroll{max-height:230px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{position:sticky;top:0;background:color-mix(in oklab,var(--bg-1) 92%,transparent);backdrop-filter:blur(6px);
+  text-align:left;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:7px 12px;border-bottom:1px solid var(--border)}
+td{padding:6px 12px;border-bottom:1px solid var(--border)}
+tr.sect td{color:var(--muted);font-style:italic;font-size:11.5px;background:var(--panel-2)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+tbody tr:hover td{background:var(--panel-2)}
+/* help */
+details.help{border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+details.help>summary{padding:9px 14px;cursor:pointer;font-weight:600;color:var(--muted)}
+details.help .body{padding:0 14px 14px;display:grid;gap:5px}
+details.help code{background:var(--panel-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;
+  font:12px ui-monospace,monospace;color:var(--text)}
+.pill{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:2px 9px}
+
+/* rightie oh... all of the below are a bit of a hacking to make 
+   some kind of sense on mobile as well.. */
+
+@media (max-width:1000px){
+  body{overflow:auto; height:auto;}  
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: auto; 
+    flex: none;  
+    overflow: visible;
+  }
+  .pane {
+    min-height: auto;  
+    overflow: visible;   
+  }
+  .pane:first-child {
+    flex: none;
+  }
+  .pane:last-child {
+    height: 70vh;          
+    flex: none;
+  } 
+  .canvas-wrap {
+    min-height: auto;       
+    overflow: hidden;    
+  }
+  header { flex-wrap: wrap; gap: 8px; }
+  .status { min-width: 0; flex: 1 1 100%; order: 3; }
+}
+
+
+/* let's say the user rotated their phone */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  body { overflow: auto; }
+
+/*  .pane:first-child { display: none; } */
+
+  main {
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    flex: none;
+    overflow: visible;
+  }
+  .pane:last-child {
+    flex: 1;
+    height: calc(100vh - 56px); 
+    min-height: 0;
+    overflow: visible;
+  }
+  .canvas-wrap {
+    height: 100%;
+    min-height: auto;
+  }
+  header {
+    padding: 6px 14px;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .status { min-width: 0; font-size: 11px; }
+  header h1 { font-size: 14px; }
+}
+
+/* ok.. a narrow upright phone essentially */
+
+@media (max-width:600px){
+  .status{display:none}
+  .canvas-wrap{min-height:280px} 
+}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+   <span class="dot">
+   <!-- replace with own branding here or just a unicode character eg 📈 
+  
+   -->
+   <img src="jens-org-s-b.png">
+   </span>
+    <div>Balance Projector  • jens.org/b/ <small>type and see • no signup • nothing leaves your browser</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="status" id="status">
+    <svg class="ring" viewBox="0 0 24 24"><circle class="bg" cx="12" cy="12" r="9"/><circle class="fg" id="ringFg" cx="12" cy="12" r="9" stroke-dasharray="56.5" stroke-dashoffset="0"/></svg>
+    <span id="statusText">up to date</span>
+  </div>
+  <button class="primary" id="btnNow" title="Recalculate now">↻ Update <kbd>Ctrl↵</kbd></button>
+  <button id="btnLabels" aria-pressed="true" title="Toggle event labels">🏷️ Labels</button>
+<!--
+  This functionality does not make much sense actually. Some btnStep code references also commented out.
+  
+  <button id="btnStep" aria-pressed="true" title="Stepped line = balance holds constant between events">📶 Step</button>
+-->
+  <button id="btnExample" class="ghost" title="Load the example text">📄 Example</button>
+  <button id="btnClear" class="ghost" title="Clear saved data from localStorage">🗑️ Clear</button>
+  <button id="btnPng" class="ghost" title="Download chart as PNG">⬇ PNG</button>
+  <button id="btnTheme" class="ghost" title="Toggle theme">🌗</button>
+</header>
+
+<main>
+  <section class="pane">
+    <h2>Input <span class="spacer"></span><span class="pill" id="unitPill">€</span></h2>
+    <div class="editor-wrap">
+      <div class="gutter" id="gutter"></div>
+      <textarea id="input" spellcheck="false" placeholder="type stuff here&#10;&#10;2026&#10;aug 29: 10 opening balance&#10;sep: -0.35 * 6 * 12 some costs&#10;dec: 20 + 10 more income"></textarea>
+    </div>
+    <div class="issues" id="issues" hidden></div>
+    <details class="help">
+      <summary>Syntax cheat-sheet</summary>
+      <div class="body">
+        <div><code>unit: k€</code> — sets the money unit (default <code>€</code>).</div>
+        <div><code>2027</code> alone on a line — every date below it is in that year, until the next year line.</div>
+        <div><code>sep: 12 note</code> — a bare month means <b>mid-month</b> (the 15th).</div>
+        <div><code>sep 10: …</code> / <code>2027 aug 3: …</code> / <code>2026-12-24: …</code> — explicit days, inline years, ISO all work.</div>
+        <div><code>: - .35 * 6 * 12 some costs</code> — the amount is evaluated algebraically (<code>+ - * / ( )</code>); everything after it is the event label.</div>
+        <div><code>: 45 # * 1000 * 45 note</code> — use <code>#</code> to say exactly where the amount stops and the description starts.</div>
+        <div><code>: [monthly]</code> etc, — use square brackets <code>[...]</code>to make a recurrent amount, eg yearly, 3 months, 10 days</div>
+        <div>Any line without a colon or without a recognisable date is a free-form comment and becomes a section heading for the entries below it.</div>
+      </div>
+    </details>
+  </section>
+
+  <section class="pane">
+    <h2>Projection <span class="spacer"></span><span class="pill" id="rangePill">—</span></h2>
+    <div class="stats" id="stats"></div>
+    <div class="canvas-wrap">
+      <canvas id="chart"></canvas>
+      <div class="empty" id="empty"><div><b style="font-size:16px">Nothing to plot yet</b><br>
+        Add a year and a couple of dated amounts on the left — the chart redraws automatically.</div></div>
+    </div>
+    <details class="table">
+      <summary>Events</summary>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Date</th><th>Event</th><th style="text-align:right">Change</th><th style="text-align:right">Balance</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════
+   CONFIGURATION — tweak freely
+   ══════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  DEBOUNCE_MS      : 1700,   // redraw this long after the last keystroke
+  SAVE_DEBOUNCE_MS : 1000,   // localStorage write delay
+  DEFAULT_UNIT     : "€",    // used when no "unit:" line is present
+  MID_MONTH_DAY    : 15,     // "sep:" with no day  ->  the 15th
+  RECURRENCE_BUFFER_DAYS: 7, // how much to extend recurrences past last explicit event
+  STORAGE_KEY      : "balance-projector.v1",
+  OUTLIER_FACTOR   : 25,     // flag amounts this many x above the median as suspicious
+  MAX_LABEL_CHARS  : 26,     // label truncation on the chart
+  TAIL_FRACTION    : 0.07,   // flat "projected forward" stub after the last event
+  PAD_FRACTION     : 0.04,   // horizontal breathing room
+  LABEL_OFFSETS    : [-26,-50,-74,26,50,74,-98,98,-122,122] // vertical label placement attempts
+};
+
+const FONT = 'ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,sans-serif';
+const $ = id => document.getElementById(id);
+
+/* ══════════════════════════════════════════════════════════════════════
+   1. ALGEBRAIC AMOUNT EVALUATOR
+   Greedy recursive-descent: consumes the longest valid prefix that is an
+   arithmetic expression and hands the remainder back as the description.
+   ══════════════════════════════════════════════════════════════════════ */
+function evalExpr(src){
+  let i = 0;
+  const ws = () => { while (i < src.length && /\s/.test(src[i])) i++; };
+
+  function primary(){
+    ws();
+    if (src[i] === "(" || src[i] === "["){
+      const save = i, close = src[i] === "(" ? ")" : "]";
+      i++;
+      const v = expr();
+      ws();
+      if (v === null || src[i] !== close){ i = save; return null; }
+      i++; return v;
+    }
+    const m = /^(?:\d+(?:[.,]\d+)?|[.,]\d+)/.exec(src.slice(i));
+    if (!m) return null;
+    i += m[0].length;
+    return parseFloat(m[0].replace(",", "."));
+  }
+  function unary(){
+    ws();
+    if (src[i] === "-" || src[i] === "+" || src[i] === "\u2212"){
+      const sign = (src[i] === "-" || src[i] === "\u2212") ? -1 : 1, save = i;
+      i++;
+      const v = unary();
+      if (v === null){ i = save; return null; }
+      return sign * v;
+    }
+    return primary();
+  }
+  function term(){
+    let v = unary(); if (v === null) return null;
+    for(;;){
+      const save = i; ws();
+      const op = src[i];
+      if (op !== "*" && op !== "/" && op !== "\u00d7" && op !== "\u00f7"){ i = save; return v; }
+      i++;
+      const r = unary();
+      if (r === null){ i = save; return v; }
+      v = (op === "*" || op === "\u00d7") ? v * r : v / r;
+    }
+  }
+  function expr(){
+    let v = term(); if (v === null) return null;
+    for(;;){
+      const save = i; ws();
+      const op = src[i];
+      if (op !== "+" && op !== "-" && op !== "\u2212"){ i = save; return v; }
+      i++;
+      const r = term();
+      if (r === null){ i = save; return v; }
+      v = (op === "+") ? v + r : v - r;
+    }
+  }
+  const value = expr();
+  if (value === null || !isFinite(value)) return { ok:false, rest:src };
+  return { ok:true, value, rest: src.slice(i) };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   2. DATE PARSING
+   ══════════════════════════════════════════════════════════════════════ */
+const MONTHS = ["january","february","march","april","may","june",
+                "july","august","september","october","november","december"];
+function monthIndex(tok){
+  tok = tok.replace(/[.,]+$/,"").toLowerCase();
+  if (tok.length < 3) return null;
+  if (tok === "sept") return 8;
+  const hits = MONTHS.map((m,i)=>m.startsWith(tok)?i:-1).filter(i=>i>=0);
+  return hits.length === 1 ? hits[0] : null;
+}
+const daysInMonth = (y,m) => new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+
+/** head = everything before the ':' — must be *entirely* a date spec. */
+function parseDateHead(head){
+  const raw = head.trim();
+  if (!raw) return null;
+
+  // ISO-ish:  2026-09-15 / 2026-9 / 2026/09/15
+  let m = /^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/.exec(raw);
+  if (m){
+    const mo = +m[2]-1; if (mo < 0 || mo > 11) return null;
+    return { year:+m[1], month:mo, day: m[3] ? +m[3] : null };
+  }
+  // European numeric: 15.9.2026 / 15.9.
+  m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})?$/.exec(raw);
+  if (m){
+    const mo = +m[2]-1; if (mo < 0 || mo > 11) return null;
+    return { year: m[3] ? +m[3] : null, month:mo, day:+m[1] };
+  }
+
+  const t = raw.toLowerCase().replace(/,/g," ").split(/\s+/).filter(Boolean);
+  let i = 0, year = null, month = null, day = null;
+  if (/^\d{4}$/.test(t[i])) { year = +t[i]; i++; }
+  if (i >= t.length) return null;
+  month = monthIndex(t[i]);
+  if (month === null) return null;
+  i++;
+  if (i < t.length && /^\d{1,2}(st|nd|rd|th)?$/i.test(t[i])){
+    const d = parseInt(t[i], 10);
+    if (d < 1 || d > 31) return null;
+    day = d; i++;
+  }
+  if (i < t.length && /^\d{4}$/.test(t[i])) { year = +t[i]; i++; }
+  if (i !== t.length) return null;
+  return { year, month, day };
+}
+const looksDateish = head => {
+  const first = head.trim().split(/\s+/)[0] || "";
+  return monthIndex(first) !== null || /^\d{4}([-/.]|$)/.test(first) || /^\d{1,2}\./.test(first);
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   3A. RECURRENCE SPEC PARSER
+   ══════════════════════════════════════════════════════════════════════ */
+
+const _DAY_MS = 86400000;
+
+function parseRecurrenceSpec(raw){
+  let s = raw.trim().toLowerCase();
+  if (!s) return null;
+  s = s.replace(/^every\s+/, '').trim();           // forgive "[every 10 days]"
+
+  const named = {
+    daily:       { type:'days',   n:1,  label:'daily'       },
+    weekly:      { type:'days',   n:7,  label:'weekly'      },
+    biweekly:    { type:'days',   n:14, label:'biweekly'    },
+    fortnightly: { type:'days',   n:14, label:'fortnightly' },
+    monthly:     { type:'months', n:1,  label:'monthly'     },
+    quarterly:   { type:'months', n:3,  label:'quarterly'   },
+    yearly:      { type:'months', n:12, label:'yearly'      },
+    annually:    { type:'months', n:12, label:'annually'    },
+  };
+  if (named[s]) return { ...named[s], raw };
+
+  const m = /^(\d+)\s*(days?|weeks?|months?|years?)$/.exec(s);
+  if (m){
+    const n = +m[1], u = m[2];
+    if (u.startsWith('day'))   return { type:'days',   n,         label:`${n} day${n>1?'s':''}`,   raw };
+    if (u.startsWith('week'))  return { type:'days',   n:n*7,     label:`${n} week${n>1?'s':''}`,  raw };
+    if (u.startsWith('month')) return { type:'months', n,         label:`${n} month${n>1?'s':''}`, raw };
+    if (u.startsWith('year'))  return { type:'months', n:n*12,    label:`${n} year${n>1?'s':''}`,  raw };
+  }
+  return null;                                      // not a recurrence -> leave in text
+}
+
+/* Pull every recurrence-looking [...] out of the line.
+   Returns { spec, line, matches }:
+     spec     - first parsed spec, or null
+     line     - the line with all matching brackets removed (spaces collapsed)
+     matches  - how many brackets parsed as a recurrence                  */
+function extractRecurrence(line){
+  const re = /\[([^\]]*)\]/g;
+  let m, spec = null, matches = 0, last = 0, built = '';
+  while ((m = re.exec(line)) !== null){
+    const s = parseRecurrenceSpec(m[1]);
+    if (s){
+      matches++;
+      if (!spec) spec = s;                          // first one wins
+      built += line.slice(last, m.index);           // drop this bracket
+      last   = m.index + m[0].length;
+    }
+  }
+  if (!spec) return { spec:null, line, matches:0 };
+  built += line.slice(last);
+  return { spec, line: built.replace(/\s{2,}/g, ' ').trim(), matches };
+}
+
+/* Add N calendar months to a UTC ms timestamp, clamping the day to the
+   target month's length (so Jan 31 + 1 month -> Feb 28/29).            */
+function addMonthsUTC(ms, n){
+  const d = new Date(ms);
+  let y = d.getUTCFullYear(), mo = d.getUTCMonth() + n, day = d.getUTCDate();
+  y  += Math.floor(mo / 12);
+  mo  = ((mo % 12) + 12) % 12;
+  return Date.UTC(y, mo, Math.min(day, daysInMonth(y, mo)));
+}
+
+/* Generate occurrences of `base` up to maxDate + buffer. Returns an
+   array of event objects (without balances; those are computed later). */
+function expandRecurrence(base, spec, maxDate){
+  const out = [];
+  const limit = maxDate + (CONFIG.RECURRENCE_BUFFER_DAYS ?? 7) * _DAY_MS;
+  let ms = base.date, guard = 0;
+  while (guard++ < 100000){
+    ms = (spec.type === 'days')
+      ? ms + spec.n * _DAY_MS
+      : addMonthsUTC(ms, spec.n);
+    if (ms > limit) break;
+    out.push({
+      ...base,
+      date: ms,
+      balance: undefined,
+      recurring: true,
+      recSpec: spec.label,
+    });
+  }
+  return out;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   3B. LINE PARSER
+   ══════════════════════════════════════════════════════════════════════ */
+function parse(text){
+  const lines  = text.split(/\r?\n/);
+  const events = [], issues = [];
+  let year = null, unit = CONFIG.DEFAULT_UNIT;
+  let sectionParts = [], lastCommentLine = -5;
+
+  lines.forEach((rawLine, idx) => {
+    const lineNo = idx + 1;
+    const line = rawLine.trim();
+    if (!line) return;
+
+    // -- directive: unit --------------------------------------------------
+    let m = /^(?:unit|units|currency)\s*:\s*(.+)$/i.exec(line);
+    if (m){ unit = m[1].trim(); return; }
+
+    // -- directive: bare year --------------------------------------------
+    m = /^(\d{4})\.?$/.exec(line);
+    if (m && +m[1] >= 1900 && +m[1] <= 2999){ year = +m[1]; return; }
+
+    // -- dated entry ------------------------------------------------------
+    const ci = line.indexOf(":");
+    if (line.indexOf(":") > -1){
+      // extract a recurrence bracket from anywhere on the line first,
+      // so it never interferes with date-head or amount parsing.
+      const { spec: rec, line: cleaned, matches } = extractRecurrence(line);
+
+      // re-split on ":" using the cleaned line; fall back to the original
+      // if (impossibly) the only colon lived inside a removed bracket.
+      let ci = cleaned.indexOf(":");
+      let head, tail;
+      if (ci > -1){ head = cleaned.slice(0, ci); tail = cleaned.slice(ci + 1); }
+      else       { ci = line.indexOf(":"); head = line.slice(0, ci); tail = line.slice(ci + 1); }
+      const d = parseDateHead(head);
+      if (d){
+        let y = d.year;
+        if (y != null) year = y;                       // an inline year also sets the context
+        else if (year != null) y = year;
+        else {
+          y = new Date().getUTCFullYear();
+          issues.push({lineNo, sev:"warn", msg:`No year in effect — assumed ${y}. Put "${y}" on a line of its own above.`});
+        }
+        const day  = Math.min(d.day ?? CONFIG.MID_MONTH_DAY, daysInMonth(y, d.month));
+        const date = Date.UTC(y, d.month, day);
+
+        const hashAt = tail.indexOf("#");
+        const exprSrc = hashAt > -1 ? tail.slice(0, hashAt) : tail;
+        const r = evalExpr(exprSrc);
+
+        if (!r.ok){
+          issues.push({lineNo, sev:"error",
+            msg:`Couldn't read an amount after ":". Expected something like "12", "-0.8 * 11" or "-(10 + 6)".`});
+          return;
+        }
+        if (hashAt > -1 && r.rest.trim())
+          issues.push({lineNo, sev:"warn", msg:`Ignored "${r.rest.trim()}" — it sits between the amount and the "#".`});
+        if (hashAt === -1 && /^[\s,]*[\d.(]/.test(r.rest))
+          issues.push({lineNo, sev:"warn",
+            msg:`Ambiguous: the description starts with a number. Insert "#" where the amount ends.`});
+
+        const desc = (hashAt > -1 ? tail.slice(hashAt + 1) : r.rest)
+                       .replace(/^[\s,;:.]+/, "").trim();
+
+        const ev = { lineNo, date, amount:r.value, desc,
+                     section: sectionParts.join(" ").trim(),
+                     explicitDay: d.day != null };
+        if (rec){
+          ev.recurring = true;
+          ev.recSpec   = rec.label;   // human-readable, e.g. "monthly"
+          ev.recurrence = rec;        // full spec, used by expandRecurrence
+        }
+        events.push(ev);
+
+        if (matches > 1)
+          issues.push({lineNo, sev:"warn",
+            msg:`Multiple recurrence brackets on one line — only the first ([${rec.label}]) was used.`});
+
+        return;
+      }
+      if (looksDateish(head)){
+        issues.push({lineNo, sev:"error",
+          msg:`"${head.trim()}" looks like a date but couldn't be parsed — try "sep", "sep 15", "2027 sep 15" or "2027-09-15".`});
+        return;
+      }
+    }
+
+    // -- free-form comment -> section heading for what follows -------------
+    if (lineNo === lastCommentLine + 1) sectionParts.push(line);
+    else sectionParts = [line];
+    lastCommentLine = lineNo;
+  });
+
+
+  // -- expand recurring events (2nd pass) -------------------------------
+  if (events.length){
+    const maxDate = events.reduce((mx, e) => e.date > mx ? e.date : mx, -Infinity);
+    const extra = [];
+    events.forEach(e => {
+      if (!e.recurring) return;
+      const occ = expandRecurrence(e, e.recurrence, maxDate);
+      extra.push(...occ);
+      if (occ.length){
+        issues.push({lineNo: e.lineNo, sev:"info",
+          //msg:`Recurs [${e.recSpec}] — generated ${occ.length} additional occurrence(s) up to the last dated entry (+${CONFIG.RECURRENCE_BUFFER_DAYS ?? 7}d).`});
+          msg:`Recurs [${e.recSpec}] — generated ${occ.length} additional occurrence(s).`});
+      }
+    });
+    events.push(...extra);
+  }
+
+
+  // running balance
+  events.sort((a,b) => a.date - b.date || a.lineNo - b.lineNo);
+  let bal = 0;
+  events.forEach(e => { bal += e.amount; e.balance = bal; });
+
+  // gentle "is that really right?" outlier hint
+  const mags = events.map(e => Math.abs(e.amount)).filter(v => v > 0).sort((a,b) => a-b);
+  if (mags.length >= 4){
+    const med = mags[Math.floor(mags.length/2)];
+    events.forEach(e => {
+      if (med > 0 && Math.abs(e.amount) > CONFIG.OUTLIER_FACTOR * med)
+        issues.push({lineNo:e.lineNo, sev:"info",
+          msg:`${fmtNum(e.amount)} is far larger than your other entries — worth double-checking the expression.`});
+    });
+  }
+  issues.sort((a,b) => a.lineNo - b.lineNo);
+  return { events, issues, unit };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4. FORMATTING HELPERS
+   ══════════════════════════════════════════════════════════════════════ */
+const NF  = new Intl.NumberFormat(undefined, {maximumFractionDigits:2});
+const NF0 = new Intl.NumberFormat(undefined, {maximumFractionDigits:0});
+const fmtNum    = n => NF.format(Math.abs(n) < 1e-9 ? 0 : n);
+const fmtSigned = n => (n > 0 ? "+" : n < 0 ? "\u2212" : "") + NF.format(Math.abs(n));
+let SYMBOL = CONFIG.DEFAULT_UNIT;
+let UNIT   = CONFIG.DEFAULT_UNIT;
+//const fmtMoney  = n => fmtNum(n) + (SYMBOL ? " " + SYMBOL : "");
+const fmtMoney = n => fmtNum(n) + (UNIT ? " " + UNIT : "");
+function symbolFromUnit(u){
+  const m = /([€$£¥₹₽₺₩؋]|\b(?:kr|CHF|SEK|NOK|DKK|PLN|CZK|USD|EUR|GBP|JPY|CAD|AUD)\b)/i.exec(u || "");
+  return m ? m[1] : "";
+}
+const MFMT = new Intl.DateTimeFormat(undefined, {month:"short", timeZone:"UTC"});
+const DFMT = new Intl.DateTimeFormat(undefined, {day:"numeric", month:"short", year:"numeric", timeZone:"UTC"});
+const fmtDate = ms => DFMT.format(new Date(ms));
+
+/* ══════════════════════════════════════════════════════════════════════
+   5. X-AXIS TICKS (linear time scale, no date-adapter needed)
+   ══════════════════════════════════════════════════════════════════════ */
+const DAY = 864e5;
+let TICK_MODE = "month", TICK_STEP = 1;
+function buildTicks(min, max){
+  const span = max - min, out = [];
+  if (span <= 75 * DAY){                                    // short horizon -> weekly
+    TICK_MODE = "day";
+    const step = span <= 21*DAY ? 2 : span <= 45*DAY ? 7 : 14;
+    TICK_STEP = step;
+    let d = new Date(min); d.setUTCHours(0,0,0,0);
+    let t = d.getTime(); while (t < min) t += DAY;
+    for (; t <= max; t += step*DAY) out.push({value:t});
+    return out;
+  }
+  TICK_MODE = "month";
+  const d0 = new Date(min), d1 = new Date(max);
+  const months = (d1.getUTCFullYear()-d0.getUTCFullYear())*12 + (d1.getUTCMonth()-d0.getUTCMonth()) + 1;
+  let step = [1,2,3,4,6,12].find(s => months/s <= 10) || 12*Math.ceil(months/120);
+  TICK_STEP = step;
+  let mi = d0.getUTCFullYear()*12 + d0.getUTCMonth();
+  mi = Math.ceil(mi/step)*step;
+  for (; ; mi += step){
+    const t = Date.UTC(Math.floor(mi/12), mi%12, 1);
+    if (t > max) break;
+    if (t >= min) out.push({value:t});
+  }
+  return out;
+}
+function tickLabel(v, index, ticks){
+  const d = new Date(v);
+  if (TICK_MODE === "day"){
+    const prev = index > 0 ? new Date(ticks[index-1].value) : null;
+    const line2 = (!prev || prev.getUTCMonth() !== d.getUTCMonth()) ? MFMT.format(d) : "";
+    return line2 ? [String(d.getUTCDate()), line2] : String(d.getUTCDate());
+  }
+  if (TICK_STEP >= 12) return String(d.getUTCFullYear());
+  const prev = index > 0 ? new Date(ticks[index-1].value) : null;
+  const showYear = !prev || prev.getUTCFullYear() !== d.getUTCFullYear();
+  return showYear ? [MFMT.format(d), String(d.getUTCFullYear())] : MFMT.format(d);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   6. CHART
+   ══════════════════════════════════════════════════════════════════════ */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const STATE = { showLabels:true, stepped:true, theme:"dark" };
+let chart = null;
+
+/* ---- plugin: dual gradient fill around the zero line ---- */
+const gradientFill = {
+  id:"gradientFill",
+  //beforeDatasetsDraw(c){
+  afterLayout(c){  
+    const a = c.chartArea, ds = c.data.datasets[0];
+    if (!a || !ds || typeof ds.fill !== "object") return;
+    const yZero = Math.max(a.top, Math.min(a.bottom, c.scales.y.getPixelForValue(0)));
+    const pos = css("--pos"), neg = css("--neg");
+    const gA = c.ctx.createLinearGradient(0, a.top, 0, yZero);
+    gA.addColorStop(0, `color-mix(in oklab, ${pos} 34%, transparent)`);
+    gA.addColorStop(1, `color-mix(in oklab, ${pos} 2%, transparent)`);
+    const gB = c.ctx.createLinearGradient(0, yZero, 0, a.bottom);
+    gB.addColorStop(0, `color-mix(in oklab, ${neg} 4%, transparent)`);
+    gB.addColorStop(1, `color-mix(in oklab, ${neg} 40%, transparent)`);
+    ds.fill.above = gA; ds.fill.below = gB;
+  }
+};
+
+/* ---- plugin: "today" marker ---- */
+const todayLine = {
+  id:"todayLine",
+  afterDatasetsDraw(c){
+    const x = c.scales.x, a = c.chartArea, now = Date.now();
+    if (now < x.min || now > x.max) return;
+    const px = x.getPixelForValue(now), ctx = c.ctx;
+    ctx.save();
+    ctx.setLineDash([4,4]); ctx.lineWidth = 1.5;
+    ctx.strokeStyle = css("--grid-strong");
+    ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `700 10px ${FONT}`; ctx.fillStyle = css("--muted");
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    const w = ctx.measureText("TODAY").width + 10;
+    const lx = Math.min(px + 5, a.right - w);
+    ctx.fillStyle = css("--panel-2");
+    roundRect(ctx, lx, a.top + 3, w, 15, 5); ctx.fill();
+    ctx.fillStyle = css("--muted");
+    ctx.fillText("TODAY", lx + 5, a.top + 6);
+    ctx.restore();
+  }
+};
+
+/* ---- plugin: event labels with collision avoidance ---- */
+const eventLabels = {
+  id:"eventLabels",
+  afterDatasetsDraw(c){
+    if (!STATE.showLabels) return;
+    const meta = c.getDatasetMeta(0), data = c.data.datasets[0].data, a = c.chartArea, ctx = c.ctx;
+    const items = [];
+    meta.data.forEach((el, i) => { if (data[i] && data[i].ev) items.push({x:el.x, y:el.y, ev:data[i].ev}); });
+    if (!items.length) return;
+
+    const boxes = items.map(it => ({x1:it.x-10, y1:it.y-10, x2:it.x+10, y2:it.y+10}));
+    const hit = (b) => boxes.some(o => !(b.x2 < o.x1-3 || b.x1 > o.x2+3 || b.y2 < o.y1-3 || b.y1 > o.y2+3));
+    ctx.save();
+
+    for (const it of items){
+      const amt = fmtSigned(it.ev.amount);
+      let desc = it.ev.desc || "";
+      if (desc.length > CONFIG.MAX_LABEL_CHARS) desc = desc.slice(0, CONFIG.MAX_LABEL_CHARS-1).trimEnd() + "\u2026";
+      ctx.font = `700 11.5px ${FONT}`;  const aw = ctx.measureText(amt).width;
+      ctx.font = `500 11.5px ${FONT}`;  const dw = desc ? ctx.measureText(desc).width + 7 : 0;
+      const w = aw + dw + 20, h = 21;
+      const x = Math.max(a.left + 2, Math.min(it.x - w/2, a.right - w - 2));
+
+      let box = null;
+      for (const off of CONFIG.LABEL_OFFSETS){
+        const y1 = it.y + off - h/2;
+        if (y1 < a.top + 2 || y1 + h > a.bottom - 2) continue;
+        const cand = {x1:x, y1, x2:x+w, y2:y1+h};
+        if (!hit(cand)){ box = cand; break; }
+      }
+      if (!box) continue;
+      boxes.push(box);
+
+      const col = it.ev.amount < 0 ? css("--neg") : it.ev.amount > 0 ? css("--pos") : css("--muted");
+      // connector
+      ctx.strokeStyle = `color-mix(in oklab, ${col} 55%, transparent)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(it.x, it.y);
+      ctx.lineTo(it.x, box.y1 > it.y ? box.y1 : box.y2);
+      ctx.stroke();
+      // chip
+      ctx.fillStyle = css("--chip");
+      ctx.strokeStyle = css("--border-2");
+      roundRect(ctx, box.x1, box.y1, w, h, 7);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col;
+      roundRect(ctx, box.x1 + 1.5, box.y1 + 4, 3, h - 8, 2); ctx.fill();
+      // text
+      ctx.textBaseline = "middle"; ctx.textAlign = "left";
+      const cy = box.y1 + h/2;
+      ctx.font = `700 11.5px ${FONT}`; ctx.fillStyle = col;
+      ctx.fillText(amt, box.x1 + 11, cy);
+      if (desc){ ctx.font = `500 11.5px ${FONT}`; ctx.fillStyle = css("--muted");
+                 ctx.fillText(desc, box.x1 + 11 + aw + 7, cy); }
+    }
+    ctx.restore();
+  }
+};
+function roundRect(ctx,x,y,w,h,r){
+  if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); return; }
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+Chart.register(gradientFill, todayLine, eventLabels);
+
+// Round x outward to a "nice" number, via the classic method by Paul Heckbert.
+function niceNum(x, round) {
+  if (x === 0) return 0;
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  const exp = Math.floor(Math.log10(x));
+  const f = x / Math.pow(10, exp);
+  let nf;
+  if (round) {
+    if (f < 1.5) nf = 1;
+    else if (f < 3) nf = 2;
+    else if (f < 4) nf = 3;
+    else if (f < 7) nf = 5;
+    else nf = 10;
+  } else {
+    if (f <= 1) nf = 1;
+    else if (f <= 2) nf = 2;
+    else if (f <= 3) nf = 3;
+    else if (f <= 5) nf = 5;
+    else nf = 10;
+  }
+  return sign * nf * Math.pow(10, exp);
+}
+
+
+/* ---- build / update ---- */
+function render(){
+  const text = $("input").value;
+  const { events, issues, unit } = parse(text);
+  SYMBOL = symbolFromUnit(unit) || (unit.length <= 3 ? unit : "");
+  UNIT = unit;
+  $("unitPill").textContent = unit;
+
+  paintIssues(issues, events);
+  paintGutter(text, issues, events);
+  paintStats(events, unit);
+  paintTable(events);
+
+  if (!events.length){
+    $("empty").hidden = false;
+    $("rangePill").textContent = "—";
+    if (chart){ chart.destroy(); chart = null; }
+    return;
+  }
+  $("empty").hidden = true;
+
+  const pts = events.map(e => ({x:e.date, y:e.balance, ev:e}));
+  const first = events[0].date, last = events[events.length-1].date;
+  const span = Math.max(last - first, 30*DAY);
+  pts.push({x: last + span*CONFIG.TAIL_FRACTION, y: events[events.length-1].balance, ev:null});
+  const xMin = first - span*CONFIG.PAD_FRACTION;
+  const xMax = last + span*(CONFIG.TAIL_FRACTION + CONFIG.PAD_FRACTION);
+
+  const ys = events.map(e => e.balance).concat([0]);
+  let yMin = Math.min(...ys), yMax = Math.max(...ys);
+
+  const pad = Math.max((yMax - yMin) * 0.18, 1);
+  //const range = yMax - yMin || 1; const pad = Math.max(range * 0.15, 1);
+  //const range = yMax - yMin || 1; const pad = range * 0.05;
+
+  yMin -= pad; yMax += pad;
+
+  // yMin = niceNum(yMin, false); yMax = niceNum(yMax, false);
+  const roundOut = (n) => n >= 0 ? Math.ceil(n) : Math.floor(n);
+  yMin = roundOut(yMin); yMax = roundOut(yMax); 
+
+
+  $("rangePill").textContent = `${fmtDate(first)} → ${fmtDate(last)} · ${events.length} events`;
+
+  const data = {
+    datasets:[{
+      data: pts,
+      label: "Balance",
+      borderWidth: 3.2,
+      stepped: STATE.stepped ? "before" : false,
+      tension: STATE.stepped ? 0 : 0.15,
+      pointRadius:  ctx => ctx.raw && ctx.raw.ev ? 4.6 : 0,
+      pointHoverRadius: ctx => ctx.raw && ctx.raw.ev ? 7.5 : 0,
+      pointBackgroundColor: ctx => ctx.raw && ctx.raw.ev
+        ? (ctx.raw.ev.amount < 0 ? css("--neg") : ctx.raw.ev.amount > 0 ? css("--pos") : css("--muted"))
+        : "transparent",
+      pointBorderColor: css("--bg-1"),
+      pointBorderWidth: 2,
+      borderColor: css("--accent"),
+      segment: {
+        //borderColor: c => (c.p0.parsed.y < 0 || c.p1.parsed.y < 0) ? css("--neg") : css("--pos")
+        borderColor: c => c.p0.parsed.y < 0 ? css("--neg") : css("--pos")
+      },
+      fill: { target:"origin", above:"transparent", below:"transparent" }
+    }]
+  };
+
+// y ticks padding 8 ?
+  const options = {
+    responsive:true, maintainAspectRatio:false, animation:{duration:600, easing:"easeOutQuart"},
+    layout:{padding:{top:26, right:14, bottom:4, left:4}},
+    interaction:{mode:"nearest", intersect:false, axis:"x"},
+    scales:{
+      x:{
+        type:"linear", min:xMin, max:xMax, offset:false,
+        grid:{ color:c => (new Date(c.tick.value)).getUTCMonth() === 0 ? css("--grid-strong") : css("--grid"),
+               drawTicks:false },
+        border:{ color: css("--border") },
+        ticks:{ autoSkip:false, maxRotation:0, padding:8, color: css("--muted"),
+                font:{family:FONT, size:11, weight:"600"},
+                callback:(v,i,ticks) => tickLabel(v,i,ticks) },
+        afterBuildTicks: ax => { ax.ticks = buildTicks(ax.min, ax.max); }
+      },
+      y:{
+        min:yMin, max:yMax,
+        title:{ display:true, text:unit, color: css("--muted"),
+                font:{family:FONT, size:11.5, weight:"700"}, padding:{bottom:6} },
+        grid:{ color:c => c.tick.value === 0 ? css("--grid-strong") : css("--grid"),
+               lineWidth:c => c.tick.value === 0 ? 1.6 : 1, drawTicks:false },
+        border:{ display:false },
+        ticks:{ maxTicksLimit:8, padding:0, color: css("--muted"),
+                font:{family:FONT, size:11, weight:"600"},
+                callback:v => (Math.abs(v) >= 10000 ? NF0 : NF).format(v) }
+      }
+    },
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor: css("--chip"), borderColor: css("--border-2"), borderWidth:1,
+        titleColor: css("--text"), bodyColor: css("--text"), footerColor: css("--muted"),
+        padding:11, cornerRadius:10, displayColors:false,
+        titleFont:{family:FONT, size:12.5, weight:"700"},
+        bodyFont:{family:FONT, size:12.5}, footerFont:{family:FONT, size:11, weight:"500"},
+        filter: it => !!(it.raw && it.raw.ev),
+        callbacks:{
+          title: it => it.length ? fmtDate(it[0].raw.x) : '',
+          label: it => {
+            const e = it.raw.ev, out = [];
+            if (e.desc) out.push(e.desc);
+            //out.push(`Change:  ${fmtSigned(e.amount)}${SYMBOL ? " " + SYMBOL : ""}`);
+            out.push(`Change:  ${fmtSigned(e.amount)}${UNIT ? " " + UNIT : ""}`);
+            out.push(`Balance: ${fmtMoney(e.balance)}`);
+            return out;
+          },
+          footer: it => {
+            if (!it.length) return '';
+            const e = it[0].raw.ev, bits = [`line ${e.lineNo}`];
+            if (e.section) bits.unshift(e.section);
+            return bits.join("  ·  ");
+          }
+        }
+      }
+    }
+  };
+
+  // if (chart){ chart.data = data; chart.options = options; chart.update(); }
+  // else chart = new Chart($("chart"), { type:"line", data, options });
+
+  // exporting ?
+  if (chart){ chart.data = data; chart.options = options; 
+    chart.update(STATE.exporting ? 'none' : undefined); 
+  }
+  else chart = new Chart($("chart"), { type:"line", data, options });
+
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   7. SIDE PANELS
+   ══════════════════════════════════════════════════════════════════════ */
+function paintStats(events, unit){
+  const box = $("stats");
+  if (!events.length){ box.innerHTML = ""; return; }
+  const open = events[0].balance, close = events[events.length-1].balance;
+  let low = events[0], high = events[0];
+  let inSum = 0, outSum = 0;
+  for (const e of events){
+    if (e.balance < low.balance)  low = e;
+    if (e.balance > high.balance) high = e;
+    if (e.amount > 0) inSum += e.amount; else outSum += e.amount;
+  }
+  const cell = (t, v, sub, cls="") =>
+    `<div class="stat"><b>${t}</b><span class="${cls}">${v}</span>${sub?`<small>${sub}</small>`:""}</div>`;
+  box.innerHTML =
+    cell("Opening", fmtNum(open), fmtDate(events[0].date)) +
+    cell("Closing", fmtNum(close), fmtDate(events[events.length-1].date), close < 0 ? "neg":"pos") +
+    cell("Low", fmtNum(low.balance), fmtDate(low.date), low.balance < 0 ? "neg":"") +
+    cell("Peak", fmtNum(high.balance), fmtDate(high.date)) +
+    cell("Total in", fmtSigned(inSum), null, "pos") +
+    cell("Total out", fmtSigned(outSum), null, "neg") +
+    cell("Unit", unit, `${events.length} events`);
+}
+
+function paintTable(events){
+  const tb = $("tbody");
+  if (!events.length){ tb.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No events yet.</td></tr>`; return; }
+  let html = "", sect = null;
+  for (const e of events){
+    if (e.section && e.section !== sect){
+      sect = e.section;
+      html += `<tr class="sect"><td colspan="4">${esc(sect)}</td></tr>`;
+    }
+    html += `<tr data-line="${e.lineNo}">
+      <td style="white-space:nowrap;color:var(--muted)">${fmtDate(e.date)}${e.explicitDay?"":" <span style='opacity:.5' title='mid-month assumed'>~</span>"}</td>
+      <td>${esc(e.desc || "—")}</td>
+      <td class="num ${e.amount<0?"neg":e.amount>0?"pos":""}">${fmtSigned(e.amount)}</td>
+      <td class="num ${e.balance<0?"neg":""}">${fmtNum(e.balance)}</td></tr>`;
+  }
+  tb.innerHTML = html;
+  tb.querySelectorAll("tr[data-line]").forEach(tr =>
+    tr.addEventListener("click", () => gotoLine(+tr.dataset.line)));
+}
+
+function paintIssues(issues){
+  const box = $("issues");
+  if (!issues.length){ box.hidden = true; box.innerHTML = ""; return; }
+  const icon = {error:"⨯", warn:"!", info:"i"};
+  box.hidden = false;
+  box.innerHTML = issues.map(i =>
+    `<div class="issue ${i.sev}" data-line="${i.lineNo}">
+       <span class="ln">${i.lineNo}</span><span class="ico">${icon[i.sev]}</span><span>${esc(i.msg)}</span>
+     </div>`).join("");
+  box.querySelectorAll(".issue").forEach(el =>
+    el.addEventListener("click", () => gotoLine(+el.dataset.line)));
+}
+
+function paintGutter(text, issues, events){
+  const n = text.split(/\r?\n/).length;
+  const sev = new Map();
+  events.forEach(e => sev.set(e.lineNo, "ev"));
+  issues.forEach(i => { if (i.sev === "error" || !sev.has(i.lineNo) || sev.get(i.lineNo) === "ev")
+                          sev.set(i.lineNo, i.sev === "info" ? "ev" : i.sev); });
+  let html = "";
+  for (let i = 1; i <= n; i++) html += `<i class="${sev.get(i) || ""}">${i}</i>`;
+  $("gutter").innerHTML = html;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function gotoLine(n){
+  const ta = $("input"), lines = ta.value.split(/\r?\n/);
+  let start = 0;
+  for (let i = 0; i < n-1 && i < lines.length; i++) start += lines[i].length + 1;
+  const end = start + (lines[n-1] ? lines[n-1].length : 0);
+  ta.focus(); ta.setSelectionRange(start, end);
+  const lh = 20, wrap = ta;
+  wrap.scrollTop = Math.max(0, (n-1)*lh - wrap.clientHeight/2);
+  $("gutter").scrollTop = wrap.scrollTop;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   8. DEBOUNCE / PERSISTENCE / UI WIRING
+   ══════════════════════════════════════════════════════════════════════ */
+const RING_LEN = 56.5;
+let redrawTimer = null, saveTimer = null, deadline = 0, ticker = null;
+
+function scheduleRedraw(){
+  clearTimeout(redrawTimer);
+  deadline = Date.now() + CONFIG.DEBOUNCE_MS;
+  redrawTimer = setTimeout(runNow, CONFIG.DEBOUNCE_MS);
+  if (!ticker) ticker = setInterval(tickStatus, 100);
+  tickStatus();
+}
+function tickStatus(){
+  const left = Math.max(0, deadline - Date.now());
+  const frac = left / CONFIG.DEBOUNCE_MS;
+  $("ringFg").style.strokeDashoffset = String(RING_LEN * (1 - frac));
+  $("statusText").textContent = left > 0 ? `redrawing in ${(left/1000).toFixed(1)}s` : "up to date";
+  if (left <= 0){ clearInterval(ticker); ticker = null; }
+}
+function runNow(){
+  clearTimeout(redrawTimer); deadline = 0;
+  render(); tickStatus();
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{
+      localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
+        text: $("input").value, theme: STATE.theme,
+        showLabels: STATE.showLabels, stepped: STATE.stepped
+      }));
+    }catch(e){ /* private mode / quota — silently ignore */ }
+  }, CONFIG.SAVE_DEBOUNCE_MS);
+}
+
+const EXAMPLE = `unit: k€
+
+2026
+summer
+aug 29: 5 account balance
+
+sep: -1 bills
+oct: -1 more bills
+
+winter is coming
+dec: 2*1.7 + 2 some income from selling stuff
+
+2027
+mar 1: -0.5 [monthly]
+
+may 20: -15 need to buy stuff oh noes
+jun 12: 10 win lottery, yay
+sep 12: 1.2 somehow randomly get money [12 days]
+
+here be dragons
+oct 12: 4 another lottery win amazing
+`;
+
+function applyTheme(t){
+  STATE.theme = t;
+  document.documentElement.dataset.theme = t;
+  $("btnTheme").textContent = t === "dark" ? "🌙" : "☀️";
+  if (chart) render();
+}
+
+(function init(){
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || "null"); }catch(e){}
+  $("input").value  = saved && typeof saved.text === "string" ? saved.text : EXAMPLE;
+  STATE.showLabels  = saved ? saved.showLabels !== false : true;
+  STATE.stepped     = saved ? saved.stepped    !== false : true;
+  applyTheme(saved && saved.theme ? saved.theme
+             : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+  $("btnLabels").setAttribute("aria-pressed", String(STATE.showLabels));
+  // $("btnStep").setAttribute("aria-pressed", String(STATE.stepped));
+
+  const ta = $("input");
+  ta.addEventListener("input", () => { save(); scheduleRedraw(); paintGutterQuick(); });
+  ta.addEventListener("scroll", () => { $("gutter").scrollTop = ta.scrollTop; });
+  ta.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); runNow(); }
+    if (e.key === "Tab"){
+      e.preventDefault();
+      const s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0,s) + "  " + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+      save(); scheduleRedraw();
+    }
+  });
+  function paintGutterQuick(){    // keep numbering in sync while typing
+    const n = ta.value.split(/\r?\n/).length;
+    if ($("gutter").childElementCount !== n){
+      let h = ""; for (let i = 1; i <= n; i++) h += `<i>${i}</i>`;
+      $("gutter").innerHTML = h;
+    }
+  }
+
+  $("btnNow").onclick     = runNow;
+
+  $("btnExample").onclick = () => { 
+      const ta = $("input");
+      if (ta.value.trim() && !confirm("This will replace your current input. Continue?")) return;
+      ta.value = EXAMPLE; save(); runNow(); };
+  
+  $("btnClear").onclick = () => {
+    if (!confirm("Remove saved data from this browser's local storage and clear text?")) return;
+    localStorage.removeItem(CONFIG.STORAGE_KEY);
+    $("input").value = ""; render();
+  };
+  
+  $("btnTheme").onclick   = () => { applyTheme(STATE.theme === "dark" ? "light" : "dark"); save(); };
+  $("btnLabels").onclick  = () => { STATE.showLabels = !STATE.showLabels;
+                                    $("btnLabels").setAttribute("aria-pressed", String(STATE.showLabels));
+                                    save(); if (chart) chart.update(); };
+  // $("btnStep").onclick    = () => { STATE.stepped = !STATE.stepped;
+  //                                   $("btnStep").setAttribute("aria-pressed", String(STATE.stepped));
+  //                                  save(); render(); };
+  $("btnPng").onclick     = () => {
+    if (!chart) return;
+
+
+    // Remember what the user had
+    const originalTheme = STATE.theme;
+    STATE.exporting = true;
+
+    // reduce flicker
+    document.body.style.visibility = "hidden";
+
+
+    // Switch to light theme and re-render (no animation so canvas is ready immediately)
+    applyTheme("light");
+    
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // white background and not transparent
+        // Get the canvas element
+        const canvas = chart.canvas
+        // Create a temporary canvas with a white background
+        const tmpCanvas = document.createElement("canvas");
+        tmpCanvas.width = canvas.width;
+        tmpCanvas.height = canvas.height;
+        const ctx = tmpCanvas.getContext("2d");
+        // Fill with white (or any color you want)
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+        // Draw the chart on top
+        ctx.drawImage(canvas, 0, 0);
+
+        const a = document.createElement("a");
+        a.download = "balance-projection.png";
+        //a.href = chart.toBase64Image("image/png", 1);
+        a.href = tmpCanvas.toDataURL("image/png", 1);
+        a.click();
+
+        // Restore original theme + re-render
+        applyTheme(originalTheme);
+        STATE.exporting = false;
+
+        // show the canvas again
+        document.body.style.visibility = "visible";
+        
+      });
+    });  
+
+    
+  };
+  window.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); runNow(); }
+  });
+
+  render(); tickStatus();
+})();
+</script>
+</body>
+</html>
