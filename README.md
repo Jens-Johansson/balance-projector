@@ -1,10 +1,10 @@
 # balance-projector
 
-One page javascript app to make account balance projections into the future, with a chart. Uses a very freeform format text input.
+One page javascript app to make account balance projections into the future, with a chart. Uses a very freeform text format for input.
 
 ### Features
 
-Project future financial events into an account balance chart. You can type hypotheticals and see directly what happens. One page javascript app. Nothing leaves your browser, for privacy. Has dark mode, built in PNG export, a syntax helper and an accordion display of the financial events sorted by time. Leverages chart.js. There is a demo [here](https://jens.org/b/) but you could also host this yourself of course.
+Project future financial events into an account balance chart. You can type hypotheticals and see directly what happens. One page javascript app. Nothing leaves your browser, for privacy. Stores the input text in a local session in your own browser's localstorage, if you navigate away from the page the text will be there when you return (without eg cookies or some kind of sign up). It also has a preset mechanism in order to handle multiple projection scenarios. Dark mode, built in PNG export, a syntax helper, togglable text labels and an accordion display of the financial events sorted by time. Leverages chart.js. There is a demo [here](https://jens.org/b/) but you could also host this yourself of course.
 
 ### Format of the text
 
@@ -51,7 +51,7 @@ oct 12: 4 another lottery win amazing
 
 ### Demo
 
-https://jens.org/b/ of course no signup or some such bullshit wtf
+https://jens.org/b/  (no signup, cookies, tracking, or data collection)
 
 ### Provenance and license
 
