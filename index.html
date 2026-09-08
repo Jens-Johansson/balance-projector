@@ -13,18 +13,22 @@
 /* ─────────────────────────── theme tokens ─────────────────────────── */
 :root{
   --bg-0:#0b0b10; --bg-1:#131318; --panel:rgba(255,255,255,.045); --panel-2:rgba(255,255,255,.07);
-  --border:rgba(255,255,255,.10); --border-2:rgba(255,255,255,.16);
+  --border:rgba(255,255,255,.10); --border-2:rgba(255,255,255,.16); --border-3:rgba(255,255,255,.30);
   --text:#e4e4ea; --muted:#8a8a96; --faint:#58586a;
   --accent: #3a3a3a; --accent-2:#4a4a4a;
+  --accent-sel:#ff3a3a;
+  --accent-ring:#3a3aff;
   --pos:#2fd6a0; --neg:#ff5f73; --warn:#ffc85c;
   --chip:rgba(11,17,32,.92); --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.22);
   --shadow:0 10px 30px rgba(0,0,0,.45);
 }
 html[data-theme="light"]{
   --bg-0:#eaeaee; --bg-1:#ffffff; --panel:rgba(0,0,0,.03); --panel-2:rgba(0,0,0,.05);
-  --border:rgba(0,0,0,.10); --border-2:rgba(0,0,0,.16);
+  --border:rgba(0,0,0,.02); --border-2:rgba(0,0,0,.04); --border-3:rgba(0,0,0,.16); 
   --text:#16161e; --muted:#5c5c6a; --faint:#94949e;
   --accent:#cccccc; --accent-2:#aaaaaa;
+  --accent-sel:#ffaaaa;
+  --accent-ring:#aaaaff;
   --pos:#0fa678; --neg:#e03a52; --warn:#b57b00;
   --chip:rgba(255,255,255,.95); --grid:rgba(15,15,15,.07); --grid-strong:rgba(15,15,15,.26);
   --shadow:0 10px 28px rgba(5,5,5,.12);
@@ -70,19 +74,28 @@ header{
 .status{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);min-width:190px}
 .ring{width:20px;height:20px;flex:0 0 auto;transform:rotate(-90deg)}
 .ring circle{fill:none;stroke-width:3}
-.ring .bg{stroke:var(--border-2)} .ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.ring .bg{stroke:var(--border-2)} .ring .fg{stroke:var(--accent-ring);stroke-linecap:round;transition:stroke-dashoffset .02s linear}
 button,.btn{
   font:inherit;font-size:12.5px;font-weight:600;color:var(--text);background:var(--panel);
-  border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer;
+  border:1px solid var(--border-3);border-radius:10px;padding:7px 12px;cursor:pointer;
   transition:.15s ease; display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
 }
-button:hover{background:var(--panel-2);border-color:var(--border-2);transform:translateY(-1px)}
+button:hover{background:var(--border);border-color:var(--text);transform:translateY(-1px)}
 button:active{transform:translateY(0)}
 button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;
   box-shadow:0 6px 18px color-mix(in oklab,var(--accent) 35%,transparent)}
 button.ghost{background:transparent}
-button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+button.ghost:hover{background:var(--border-2);border-color:var(--text);transform:translateY(-1px)}
+button[aria-pressed="true"]{border-color:var(--accent-sel); 
+  background: color-mix(in srgb, var(--bg-0), var(--accent-sel) 20%);
+}
+button[aria-pressed="true"]:hover{border-color:var(--accent-sel); 
+  background: color-mix(in srgb, var(--bg-0), var(--accent-sel) 0%);
+}
+
 kbd{font:600 10.5px ui-monospace,monospace;background:var(--panel-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--muted)}
+button kbd {font-size: calc(10.5px * 0.9);}
+
 /* ─────────────────────────── layout ─────────────────────────── */
 main{flex:1;display:grid;grid-template-columns:minmax(340px,.9fr) 1.6fr;gap:14px;padding:14px;min-height:0}
 .pane{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);
@@ -90,6 +103,26 @@ main{flex:1;display:grid;grid-template-columns:minmax(340px,.9fr) 1.6fr;gap:14px
 .pane>h2{margin:0;padding:11px 14px;font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
   color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
 .pane>h2 .spacer{flex:1}
+
+/* presets */
+.preset-bar{display:flex;align-items:center;gap:6px}
+.preset-label{font-size:11px;color:var(--muted);letter-spacing:.3px;text-transform:none;font-weight:500}
+.preset-select{
+  background:var(--panel-2);color:var(--text);border:1px solid var(--border);
+  border-radius:6px;padding:3px 8px 3px 6px;font-size:11px;
+  max-width:160px;cursor:pointer;outline:none;
+  appearance:auto;
+}
+.preset-select:focus{border-color:var(--accent,#6ea8fe)}
+.preset-btn{
+  width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--panel-2);color:var(--muted);border:1px solid var(--border);
+  border-radius:6px;font-size:14px;line-height:1;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.preset-btn:hover{background:var(--border);color:var(--text);transform:translateY(-1px)}
+
+
 /* editor */
 .editor-wrap{flex:1;display:flex;min-height:0;position:relative;font:13px/20px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .gutter{padding:12px 8px 12px 12px;text-align:right;color:var(--faint);background:transparent;user-select:none;overflow:hidden;
@@ -122,15 +155,14 @@ textarea::placeholder{color:var(--faint)}
 .stat b{display:block;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 .stat span{font-size:20px;font-weight:750;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .stat small{display:block;font-size:10px;color:var(--faint);font-weight:500;margin-top:2px}
-
-
 .pos{color:var(--pos)} .neg{color:var(--neg)}
+
 /* chart */
 .canvas-wrap{flex:1;position:relative;min-height:220px;padding:6px 10px 10px}
-
 .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:30px;pointer-events:none}
 .empty[hidden]{display:none}
 .empty div{max-width:340px}
+
 /* table */
 details.table{border-top:1px solid var(--border)}
 details.table>summary{padding:9px 14px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);list-style:none}
@@ -145,13 +177,14 @@ td{padding:6px 12px;border-bottom:1px solid var(--border)}
 tr.sect td{color:var(--muted);font-style:italic;font-size:11.5px;background:var(--panel-2)}
 td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 tbody tr:hover td{background:var(--panel-2)}
+
 /* help */
 details.help{border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
 details.help>summary{padding:9px 14px;cursor:pointer;font-weight:600;color:var(--muted)}
 details.help .body{padding:0 14px 14px;display:grid;gap:5px}
 details.help code{background:var(--panel-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;
   font:12px ui-monospace,monospace;color:var(--text)}
-.pill{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:2px 9px}
+.pill{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:2px 9px;text-transform:none;}
 
 /* rightie oh... all of the below are a bit of a hacking to make 
    some kind of sense on mobile as well.. */
@@ -249,8 +282,8 @@ details.help code{background:var(--panel-2);border:1px solid var(--border);borde
     <svg class="ring" viewBox="0 0 24 24"><circle class="bg" cx="12" cy="12" r="9"/><circle class="fg" id="ringFg" cx="12" cy="12" r="9" stroke-dasharray="56.5" stroke-dashoffset="0"/></svg>
     <span id="statusText">up to date</span>
   </div>
-  <button class="primary" id="btnNow" title="Recalculate now">↻ Update <kbd>Ctrl↵</kbd></button>
-  <button id="btnLabels" aria-pressed="true" title="Toggle event labels">🏷️ Labels</button>
+  <button class="primary" id="btnNow" title="Recalculate now">↻ Update&nbsp;&nbsp;<kbd>Ctrl↵</kbd></button>
+  <button id="btnLabels" aria-pressed="false" class="ghost" title="Toggle event labels">🏷️ Labels</button>
 <!--
   This functionality does not make much sense actually. Some btnStep code references also commented out.
   
@@ -264,7 +297,20 @@ details.help code{background:var(--panel-2);border:1px solid var(--border);borde
 
 <main>
   <section class="pane">
-    <h2>Input <span class="spacer"></span><span class="pill" id="unitPill">€</span></h2>
+    <h2>
+      Input
+      <span class="spacer"></span>
+      <span class="preset-bar">
+        <label class="preset-label" for="presetSelect">Preset:</label>
+        <select id="presetSelect" class="preset-select" title="Select preset"></select>
+        <button id="btnAddPreset" class="preset-btn" title="Add a blank preset" aria-label="Add preset">+</button>
+        <button id="btnDelPreset" class="preset-btn" title="Delete selected preset" aria-label="Delete preset">−</button>
+        <button id="btnRenamePreset" class="preset-btn" title="Rename selected preset" aria-label="Rename preset">✎</button>
+      </span>
+      <span class="spacer"></span>
+      <span class="pill" id="unitPill">€</span>
+    </h2>
+    
     <div class="editor-wrap">
       <div class="gutter" id="gutter"></div>
       <textarea id="input" spellcheck="false" placeholder="type stuff here&#10;&#10;2026&#10;aug 29: 10 opening balance&#10;sep: -0.35 * 6 * 12 some costs&#10;dec: 20 + 10 more income"></textarea>
@@ -311,13 +357,15 @@ details.help code{background:var(--panel-2);border:1px solid var(--border);borde
    CONFIGURATION — tweak freely
    ══════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  DEBOUNCE_MS      : 1700,   // redraw this long after the last keystroke
+  DEBOUNCE_MS      : 3000,   // redraw this long after the last keystroke
   SAVE_DEBOUNCE_MS : 1000,   // localStorage write delay
   DEFAULT_UNIT     : "€",    // used when no "unit:" line is present
   MID_MONTH_DAY    : 15,     // "sep:" with no day  ->  the 15th
   RECURRENCE_BUFFER_DAYS: 7, // how much to extend recurrences past last explicit event
   STORAGE_KEY      : "balance-projector.v1",
-  OUTLIER_FACTOR   : 25,     // flag amounts this many x above the median as suspicious
+  PRESETS_KEY      : "balance-projector.presets.v1",
+  DEFAULT_PRESET   : "Default",
+  OUTLIER_FACTOR   : 90,     // flag amounts this many x above the median as suspicious
   MAX_LABEL_CHARS  : 26,     // label truncation on the chart
   TAIL_FRACTION    : 0.07,   // flat "projected forward" stub after the last event
   PAD_FRACTION     : 0.04,   // horizontal breathing room
@@ -1111,17 +1159,27 @@ function runNow(){
   clearTimeout(redrawTimer); deadline = 0;
   render(); tickStatus();
 }
+
+
 function save(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try{
+      // persist theme / UI flags in the legacy key (keeps backward compat)
       localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
         text: $("input").value, theme: STATE.theme,
         showLabels: STATE.showLabels, stepped: STATE.stepped
       }));
-    }catch(e){ /* private mode / quota — silently ignore */ }
+      // also update the active preset entry so edits are remembered
+      const presets = loadPresets();
+      if (presets.active && presets.entries[presets.active] !== undefined){
+        presets.entries[presets.active] = $("input").value;
+        persistPresets(presets);
+      }
+    }catch(e){}
   }, CONFIG.SAVE_DEBOUNCE_MS);
 }
+
 
 const EXAMPLE = `unit: k€
 
@@ -1153,10 +1211,119 @@ function applyTheme(t){
   if (chart) render();
 }
 
+
+
+/* ── Preset management ── */
+function loadPresets(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(CONFIG.PRESETS_KEY) || "null");
+    if (raw && typeof raw === "object" && raw.entries) return raw;
+  }catch(e){}
+  // migrate: if old single-text save exists, promote it to the default preset
+  let fallback = EXAMPLE;
+  try{
+    const old = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || "null");
+    if (old && typeof old.text === "string") fallback = old.text;
+  }catch(e){}
+  return { entries: { [CONFIG.DEFAULT_PRESET]: fallback }, active: CONFIG.DEFAULT_PRESET };
+}
+
+function persistPresets(presets){
+  try{ localStorage.setItem(CONFIG.PRESETS_KEY, JSON.stringify(presets)); }catch(e){}
+}
+
+function refreshPresetDropdown(presets){
+  const sel = $("presetSelect");
+  const names = Object.keys(presets.entries);
+  sel.innerHTML = names.map(n =>
+    `<option value="${n.replace(/"/g,'&quot;')}"${n === presets.active ? " selected" : ""}>${n}</option>`
+  ).join("");
+  // disable delete when only one preset remains
+  $("btnDelPreset").disabled = names.length <= 1;
+  $("btnDelPreset").style.opacity = names.length <= 1 ? ".35" : "";
+}
+
+function applyPreset(name){
+  const presets = loadPresets();
+  if (presets.entries[name] !== undefined){
+    presets.active = name;
+    persistPresets(presets);
+    $("input").value = presets.entries[name];
+    save();
+    runNow();
+    //scheduleRedraw();
+    paintGutterQuick();
+  }
+}
+
+function addPreset(){
+  const presets = loadPresets();
+  const existing = Object.keys(presets.entries);
+  // generate a unique default name
+  let base = "Preset", n = existing.length + 1;
+  let candidate = `${base} ${n}`;
+  while (existing.includes(candidate)) candidate = `${base} ${++n}`;
+
+  const name = prompt("Name for this preset:", candidate);
+  if (name === null) return;                       // cancelled
+  const trimmed = name.trim();
+  if (!trimmed) return;
+
+  presets.entries[trimmed] = ""; // $("input").value;
+  presets.active = trimmed;
+  persistPresets(presets);
+  refreshPresetDropdown(presets);
+}
+
+function deletePreset(){
+  const presets = loadPresets();
+  const active = presets.active;
+  if (!active || Object.keys(presets.entries).length <= 1) return;
+  if (!confirm(`Delete preset "${active}"?`)) return;
+
+  delete presets.entries[active];
+  // fall back to first remaining entry
+  const remaining = Object.keys(presets.entries);
+  presets.active = remaining[0];
+  persistPresets(presets);
+  $("input").value = presets.entries[presets.active];
+  refreshPresetDropdown(presets);
+  save();
+  runNow();
+  //scheduleRedraw();
+  paintGutterQuick();
+}
+
+function renamePreset(){
+  const presets = loadPresets();
+  const oldName = presets.active;
+  if (!oldName) return;
+
+  const newName = prompt("Rename preset:", oldName);
+  if (newName === null) return;                    // cancelled
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === oldName) return;     // no change
+
+  // rebuild entries preserving order, swapping the key
+  const reordered = {};
+  for (const [k, v] of Object.entries(presets.entries)){
+    reordered[k === oldName ? trimmed : k] = v;
+  }
+  presets.entries = reordered;
+  presets.active = trimmed;
+  persistPresets(presets);
+  refreshPresetDropdown(presets);
+}
+
+
 (function init(){
   let saved = null;
   try{ saved = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || "null"); }catch(e){}
-  $("input").value  = saved && typeof saved.text === "string" ? saved.text : EXAMPLE;
+
+
+  // $("input").value  = saved && typeof saved.text === "string" ? saved.text : EXAMPLE;
+  
+
   STATE.showLabels  = saved ? saved.showLabels !== false : true;
   STATE.stepped     = saved ? saved.stepped    !== false : true;
   applyTheme(saved && saved.theme ? saved.theme
@@ -1177,6 +1344,17 @@ function applyTheme(t){
       save(); scheduleRedraw();
     }
   });
+  
+  // ── Preset controls ──
+  const presets = loadPresets();
+  refreshPresetDropdown(presets);
+  $("input").value = presets.entries[presets.active] || EXAMPLE;
+  
+  $("presetSelect").addEventListener("change", e => applyPreset(e.target.value));
+  $("btnAddPreset").addEventListener("click", addPreset);
+  $("btnDelPreset").addEventListener("click", deletePreset);
+  $("btnRenamePreset").addEventListener("click", renamePreset);
+  
   function paintGutterQuick(){    // keep numbering in sync while typing
     const n = ta.value.split(/\r?\n/).length;
     if ($("gutter").childElementCount !== n){
@@ -1193,8 +1371,9 @@ function applyTheme(t){
       ta.value = EXAMPLE; save(); runNow(); };
   
   $("btnClear").onclick = () => {
-    if (!confirm("Remove saved data from this browser's local storage and clear text?")) return;
+    if (!confirm("Remove ALL saved data from this browser's local storage, and clear text?")) return;
     localStorage.removeItem(CONFIG.STORAGE_KEY);
+    localStorage.removeItem(CONFIG.PRESETS_KEY);
     $("input").value = ""; render();
   };
   
