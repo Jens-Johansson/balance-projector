@@ -18,7 +18,7 @@ Project future financial events into an account balance chart. You can type hypo
 |unit: currency-unit|Currency unit text strictly for the display. Default is €.|
 |# comment|A comment which is just discarded (`#  //  --   ;  %  '  rem` work)|
 
-_YYYY_ is just the year, like `2026`. _date-spec_ is pretty freeform, `nov`, `nov 2`, `2026-05-11` all work. A month without a number is just considered to be mid-month. Dates don't have to be in chronological order. The _amount_ is evaluated angebraically so `-(12 * 7 + 13)` works. In case of ambiguity here `#` ends the algebraic expression so `nov 2: 1+1 # + 4 ` does what you think it would. The recurrence specification is pretty free form too so `[monthly]`, `[42 days]`, or `[2 weeks]` all work.
+_YYYY_ is just the year, like `2026`. _date-spec_ is pretty freeform, `nov`, `nov 2`, `2026-05-11` all work. A month without a number is just considered to be mid-month. Dates don't have to be in chronological order. The _amount_ is evaluated algebraically so `-(12 * 7 + 13)` works. In case of ambiguity here `#` ends the algebraic expression so `nov 2: 1+1 # + 4 ` does what you think it would. The recurrence specification is pretty free form too so `[monthly]`, `[42 days]`, or `[2 weeks]` all work.
 
 ### An example 
 
