@@ -584,6 +584,9 @@ function expandRecurrence(base, spec, maxDate){
 /* ══════════════════════════════════════════════════════════════════════
    3B. LINE PARSER
    ══════════════════════════════════════════════════════════════════════ */
+   
+const COMMENT_LINE_RE = /^(?:#|\/\/|--|;|%|'|rem\b)/i;
+   
 function parse(text){
   const lines  = text.split(/\r?\n/);
   const events = [], issues = [];
@@ -593,7 +596,7 @@ function parse(text){
   lines.forEach((rawLine, idx) => {
     const lineNo = idx + 1;
     const line = rawLine.trim();
-    if (!line) return;
+    if (!line || COMMENT_LINE_RE.test(line)) return;  // skip blank + comment lines
 
     // -- directive: unit --------------------------------------------------
     let m = /^(?:unit|units|currency)\s*:\s*(.+)$/i.exec(line);
